@@ -21,14 +21,16 @@
 const fs = require('fs');
 const readline = require('readline'); 
 
-const banUser = require('./src/banUser.js');
-const deleteMsg = require('./src/deleteMsg.js');
-const findSubstring = require('./src/findSubstring.js');
-const sendMsg = require('./src/sendMsg.js');
+const banUser = require('./src/discord/banUser.js');
+const deleteMsg = require('./src/discord/deleteMsg.js');
+const sendMsg = require('./src/discord/sendMsg.js');
 
+const findSubstring = require('./src/findSubstring.js');
+const set = require('./src/settings/set.js');
+const writeLogs = require('./src/writeLogs.js');
 const musicFuncs = require('./src/music.js');
 
-const translations = require('./translations.json');
+const translations = require('./src/translations.json');
 
 /*-----------------------------------------------------*/
 /*-------------------- DISCORD BOT --------------------*/
@@ -36,16 +38,14 @@ const translations = require('./translations.json');
 
 // Discord
 const Discord = require('discord.js');
-const { prefix, token } = require('./config.json');
+const { token } = require('./config.json');
 const client = new Discord.Client();
-
 
 // Bot settings
 const settings = new Map();
 
-fs.readFile('./settings.json', 'utf-8', (err, data) => {
-    if (err) 
-        return console.error("There was an error loading settings file\n" + err);
+fs.readFile('./data/settings.json', 'utf-8', (err, data) => {
+    if (err) return console.error("There was an error loading settings file\n" + err);
 
     data = JSON.parse(data);
 
@@ -85,6 +85,22 @@ fs.access('./phrases_blacklist.txt', fs.F_OK, err => {
 });
 
 
+// Logging
+const unloggedMessages = new Map();
+setInterval(writeLogs, 30000, unloggedMessages);
+
+function logMessage(message) {
+    let tempLog = unloggedMessages.get(message.guild.id);
+    tempLog.push([
+        message.member.user.username,
+        message.channel.name,
+        message.content
+    ]);
+    
+    unloggedMessages.set(message.guild.id, tempLog);
+}
+
+
 client.once('ready', () => {
     console.log('\nConnected!');
 });
@@ -101,9 +117,15 @@ client.once('disconnect', () => {
 client.on('message', async message => {
     if (message.author.bot) return; // Check if author is bot
 
+    if (!unloggedMessages.has(message.guild.id)) {
+        unloggedMessages.set(message.guild.id, []);
+    }
+
     if (!settings.has(message.guild.id)) {
         settings.set(message.guild.id, {
+            prefix: "!",
             language: "en",
+            logMessages: false,
             maxMessageLength: -1,
             deleteBannedPhrases: true,
             banForBannedPhrases: false
@@ -120,11 +142,16 @@ client.on('message', async message => {
     const serverSettings = settings.get(message.guild.id);
     const serverQueue = musicFuncs.getQueue().get(message.guild.id);
     const serverLang = translations[serverSettings.language];
+    const prefix = serverSettings.prefix;
 
     // Message length
     if (content.length >= serverSettings.maxMessageLength && serverSettings.maxMessageLength != -1) {
         return deleteMsg(message, `Your message is too long! ${author}`, channel);
     }
+
+    // Log message
+    if (serverSettings.logMessages) 
+        logMessage(message);
 
     // Blacklist
     blacklistedPhrases.forEach(phrase => {
@@ -172,6 +199,7 @@ client.on('message', async message => {
                 { name: 'settings', admin: true,  description: `${descriptions.settings + '\n' + descriptions.usage}: \`${prefix}settings\`` },
                 { name: 'send',     admin: true,  description: `${descriptions.send + '\n' + descriptions.usage}: \`${prefix}send "example"\` or \`${prefix}send "example" #example-channel\`` },
                 { name: 'ban',      admin: true,  description: `${descriptions.ban + '\n' + descriptions.usage}: \`${prefix}ban @example-user "Bad behavior" #bans\`` },
+                { name: 'log',      admin: true,  description: `Posts the log file for this server\nUsage: \`${prefix}log\`` },
                 { name: 'play',     admin: false, description: `${descriptions.play + '\n' + descriptions.usage}: \`${prefix}play "https://youtu.be/dQw4w9WgXcQ"\`` },
                 { name: 'skip',     admin: false, description: `${descriptions.skip + '\n' + descriptions.usage}\: \`${prefix}skip\`` },
                 { name: 'stop',     admin: false, description: `${descriptions.stop + '\n' + descriptions.usage}: \`${prefix}stop\`` },
@@ -217,7 +245,9 @@ client.on('message', async message => {
                 .setTitle('Settings')
                 .setDescription('List of all settings available')
                 .addFields(
-                    { name: 'language',            value: `Language in which you want the bot to communicate with you\nCurrent: ${serverSettings.language}\nDefault: en\nArguments: "en" or "cs"` },
+                    { name: 'prefix',              value: `Mostly a symbol that tells the bot to perform a command\nCurrent: ${serverSettings.prefix}\nDefault: "!"\nArguments: a character or a text` },
+                    { name: 'language',            value: `Language in which you want the bot to communicate with you\nCurrent: ${serverSettings.language}\nDefault: en\nArguments: "en", "cs", or "it"` },
+                    { name: 'logMessages',         value: `Wheter to log all messages posted to this server or not\nCurrent: ${serverSettings.logMessages}\nDefault: false\nArguments: "true" or "false"` },
                     { name: 'maxMessageLength',    value: `Maximum amount of characters a message can have (if you don\'t want a limit, set this to -1)\nCurrent: ${serverSettings.maxMessageLength}\nDefault: -1\nArguments: number <-1;∞>` },
                     { name: 'deleteBannedPhrases', value: `Whether to delete a message if it includes a blacklisted phrase\nCurrent: ${serverSettings.deleteBannedPhrases}\nDefault: true\nArguments: "true" or "false"` },
                     { name: 'banForBannedPhrases', value: `Whether to ban a user if his message includes a blacklisted phrase\nCurrent: ${serverSettings.banForBannedPhrases}\nDefault: false\nArguments: "true" or "false"` }
@@ -239,6 +269,10 @@ client.on('message', async message => {
 
             if (targetChannel) return sendMsg(targetString, targetChannel);
             else               return sendMsg(targetString, channel);
+        }
+
+        else if (command.startsWith("log")) {
+            return message.channel.send("Log file for this server:", { files: [`./data/logs/${message.guild.id}.log`] });
         }
 
     /* PLAYING MUSIC */
@@ -290,56 +324,8 @@ client.on('message', async message => {
     /* SETTINGS */
         else if (command.startsWith("set")) {
             const setting = command.split(" ")[1];
-            let origValue;
-
-            if (!setting)
-                return sendMsg("You have to specify which setting you want to change!", channel);
-
-            if (setting == "language") {
-                let lang;
-
-                for (let i = 0; i < Object.keys(translations).length; i++) {
-                    if (targetString == Object.keys(translations)[i]) {
-                        lang = targetString;
-                    }
-                }
-
-                if (!lang) {
-                    return sendMsg("This language does not exist!", channel);
-                }
-
-                origValue = serverSettings.language;
-                serverSettings.language = targetString;
-            }
-            else if (setting == "maxMessageLength") {
-                if ((isNaN(targetString) && isNaN(parseFloat(targetString))) || parseInt(targetString) < -1)
-                    return sendMsg("This can only be set to a number higher or equal to -1!", channel);
-
-                origValue = serverSettings.maxMessageLength;
-                serverSettings.maxMessageLength = parseInt(targetString);
-            }  
-            else if (setting == "deleteBannedPhrases") {
-                if (targetString != "true" || targetString != "false")
-                    return sendMsg("This can only be set to true and false!", channel);
-
-                origValue = serverSettings.deleteBannedPhrases;
-                serverSettings.deleteBannedPhrases = targetString;
-            }
-            else if (setting == "banForBannedPhrases") {
-                if (targetString != "true" || targetString != "false")
-                    return sendMsg("This can only be set to true and false!", channel);
-                    
-                origValue = serverSettings.banForBannedPhrases;
-                serverSettings.banForBannedPhrases = targetString;
-            }
-            else {
-                return sendMsg(`${setting} does not exist!`, channel);
-            }
-
-            console.log(settings.get(message.guild.id));
-
-            sendMsg(`${setting} has been changed from "${origValue}" to "${targetString}"`, channel)
-                
+            set(setting, targetString, serverSettings, channel);
+            
             return settings.set(message.guild.id, serverSettings);
         }
     }
@@ -353,10 +339,12 @@ client.login(token);
     process.on(eventType, () => {
         const settingsJSON = JSON.stringify(Object.fromEntries(settings));
 
-        fs.writeFileSync('./settings.json', settingsJSON, err => {
+        fs.writeFileSync('./data/settings.json', settingsJSON, err => {
             if (err)
                 return console.error("There was an error saving settings file!");
         });
+
+        writeLogs(unloggedMessages);
 
         process.exit();
     });

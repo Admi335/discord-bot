@@ -1,0 +1,79 @@
+{
+    "en": {
+        "embeds": {
+            "help": {
+                "title": "Help",
+                "description": "List of all useful commands and their usage",
+                "adminTitle": "Help - Admin",
+                "adminDescription": "List of all useful **admin** commands and their usage",
+                "fields": {
+                    "usage": "Usage",
+                    "prefix": "Shows my command prefix",
+                    "help": "Shows this list",
+                    "set": "Sets a setting",
+                    "settings": "Shows the list of available settings",
+                    "send": "Sends a message to a channel (if not specified, it sends the message to the current channel)",
+                    "ban": "Bans a user (optional: reason, channel whither the reason will be posted)",
+                    "play": "Plays a song from YouTube",
+                    "skip": "Skips the current song",
+                    "stop": "Stops the bot from playing music",
+                    "current": "Shows some info about the current song",
+                    "queue": "Show the list of queued songs",
+                    "lyrics": "Shows the lyrics for the current song"
+                }
+            }
+        }
+    },
+
+    "cs": {
+        "embeds": {
+            "help": {
+                "title": "Help",
+                "description": "Seznam všech užitečných příkazů a jejich užití",
+                "adminTitle": "Help - Admin",
+                "adminDescription": "Seznam všech užitečných **admin** příkazů a jejich užití",
+                "fields": {
+                    "usage": "Použití",
+                    "prefix": "Ukáže můj prefix",
+                    "help": "Ukáže tento seznam",
+                    "set": "Nastaví nastavení",
+                    "settings": "Ukáže seznam dostupných nastavení",
+                    "send": "Pošle zprávu do kanálu (pokud žádný není specifikován, pošle zprávu do momentálního channelu)",
+                    "ban": "Zabanuje uživatele (volitelné: důvod; kanál, kam se pošle důvod)",
+                    "play": "Zahraje píseň z YouTubu",
+                    "skip": "Přeskočí momentální píseň",
+                    "stop": "Přestane hrát hudbu",
+                    "current": "Ukáže nějaké info o momentální písni",
+                    "queue": "Ukáže seznam písní ve frontě",
+                    "lyrics": "Ukáže text momentální písně"
+                }
+            }
+        }
+    },
+    
+    "it": {
+        "embeds": {
+            "help": {
+                "title": "Aiuto",
+                "description": "Elenco di tutti i comandi utili e loro utilizzo",
+                "adminTitle": "Aiuto - Admin",
+                "adminDescription": "Elenco di tutti i comandi di amministrazione utili e del loro utilizzo",
+                "fields": {
+                    "usage": "Utilizzo",
+                    "prefix": "Mostra il mio prefisso di comando",
+                    "help": "Mostra questo elenco",
+                    "set": "Imposta un'impostazione",
+                    "settings": "Mostra l'elenco delle impostazioni disponibili",
+                    "send": "Invia un messaggio a un canale (se non specificato, invia il messaggio al canale corrente)",
+                    "ban": "Banna un utente (opzionale: motivo, canale in cui verrà pubblicato il motivo)",
+                    "play": "Riproduce una canzone da YouTube",
+                    "skip": "Salta la canzone corrente",
+                    "stop": "Impedisce al bot di riprodurre musica",
+                    "current": "Mostra alcune informazioni sulla canzone corrente",
+                    "queue": "Mostra l'elenco dei brani in coda",
+                    "lyrics": "Mostra il testo della canzone corrente"
+                }
+            }
+        }
+    }
+}
