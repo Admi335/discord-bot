@@ -49,31 +49,5 @@
                 }
             }
         }
-    },
-    
-    "it": {
-        "embeds": {
-            "help": {
-                "title": "Aiuto",
-                "description": "Elenco di tutti i comandi utili e loro utilizzo",
-                "adminTitle": "Aiuto - Admin",
-                "adminDescription": "Elenco di tutti i comandi di amministrazione utili e del loro utilizzo",
-                "fields": {
-                    "usage": "Utilizzo",
-                    "prefix": "Mostra il mio prefisso di comando",
-                    "help": "Mostra questo elenco",
-                    "set": "Imposta un'impostazione",
-                    "settings": "Mostra l'elenco delle impostazioni disponibili",
-                    "send": "Invia un messaggio a un canale (se non specificato, invia il messaggio al canale corrente)",
-                    "ban": "Banna un utente (opzionale: motivo, canale in cui verrà pubblicato il motivo)",
-                    "play": "Riproduce una canzone da YouTube",
-                    "skip": "Salta la canzone corrente",
-                    "stop": "Impedisce al bot di riprodurre musica",
-                    "current": "Mostra alcune informazioni sulla canzone corrente",
-                    "queue": "Mostra l'elenco dei brani in coda",
-                    "lyrics": "Mostra il testo della canzone corrente"
-                }
-            }
-        }
     }
 }
