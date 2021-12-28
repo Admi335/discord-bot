@@ -22,8 +22,8 @@
     "discord.js": "^12.5.3",
     "ffmpeg": "^0.0.4",
     "fluent-ffmpeg": "^2.1.2",
-    "genius-lyrics": "^4.2.9",
+    "genius-lyrics": "^4.3.5",
     "ytdl": "^1.4.1",
-    "ytdl-core": "^4.9.1"
+    "ytdl-core": "^4.9.2"
   }
 }

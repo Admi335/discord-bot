@@ -19,7 +19,11 @@
  */
 
 const fs = require('fs');
-const readline = require('readline'); 
+const readline = require('readline');
+
+const blacklist = require('./src/blacklistPhrases.js');
+const settings = require('./src/settings.js');
+const logs = require('./src/logs.js');
 
 const banUser = require('./src/discord/banUser.js');
 const deleteMsg = require('./src/discord/deleteMsg.js');
@@ -27,7 +31,6 @@ const sendMsg = require('./src/discord/sendMsg.js');
 
 const findSubstring = require('./src/findSubstring.js');
 const set = require('./src/settings/set.js');
-const writeLogs = require('./src/writeLogs.js');
 const musicFuncs = require('./src/music.js');
 
 const translations = require('./src/translations.json');
@@ -41,64 +44,12 @@ const Discord = require('discord.js');
 const { token } = require('./config.json');
 const client = new Discord.Client();
 
-// Bot settings
-const settings = new Map();
+const dataDir = './data/';
 
-fs.readFile('./data/settings.json', 'utf-8', (err, data) => {
-    if (err) return console.error("There was an error loading settings file\n" + err);
-
-    data = JSON.parse(data);
-
-    for (let i = 0; i < Object.keys(data).length; i++)
-        settings.set(Object.keys(data)[i], data[Object.keys(data)[i]]);
-
-    console.log(settings);
-});
-
-
-const blacklistedPhrases = [];
-
-fs.access('./phrases_blacklist.txt', fs.F_OK, err => {
-    if (err) {
-        return console.log("\nBlacklist of phrases doesn't exist");
-    }
-
-    let rl = readline.createInterface({
-        input: fs.createReadStream('./phrases_blacklist.txt'),
-        crlfDelay: Infinity
-    });
-
-    console.log("\nBlacklisted phrases:");
-
-    rl.input.on('error', err => {
-        console.log("Failed to read file!\n" + err);
-    });
-
-    rl.on('line', line => {
-        line.trim();
-
-        if (!line.startsWith("!--")) {
-            console.log(line);
-            blacklistedPhrases.push(line.toLowerCase());
-        }
-    });
-});
-
-
-// Logging
-const unloggedMessages = new Map();
-setInterval(writeLogs, 30000, unloggedMessages);
-
-function logMessage(message) {
-    let tempLog = unloggedMessages.get(message.guild.id);
-    tempLog.push([
-        message.member.user.username,
-        message.channel.name,
-        message.content
-    ]);
-    
-    unloggedMessages.set(message.guild.id, tempLog);
-}
+const blacklistPhrases = blacklist.get('./phrases_blacklist.txt');
+const settingsMap = settings.get(dataDir);
+const logMessagesMap = new Map();
+setInterval(logs.write, 60 * 1000, logMessagesMap, dataDir); // Save logs every 60 seconds
 
 
 client.once('ready', () => {
@@ -117,19 +68,21 @@ client.once('disconnect', () => {
 client.on('message', async message => {
     if (message.author.bot) return; // Check if author is bot
 
-    if (!unloggedMessages.has(message.guild.id)) {
-        unloggedMessages.set(message.guild.id, []);
+    if (!logMessagesMap.has(message.guild.id)) {
+        logMessagesMap.set(message.guild.id, []);
     }
 
-    if (!settings.has(message.guild.id)) {
-        settings.set(message.guild.id, {
+    if (!settingsMap.has(message.guild.id)) {
+        settingsMap.set(message.guild.id, {
             prefix: "!",
             language: "en",
-            logMessages: false,
+            logMessages: true,
             maxMessageLength: -1,
             deleteBannedPhrases: true,
             banForBannedPhrases: false
         });
+
+        fs.mkdirSync(`${dataDir}${message.guild.id}/`, { recursive: true });
     }
 
     const channel = message.channel;
@@ -139,38 +92,28 @@ client.on('message', async message => {
     const voiceChannel = message.member.voice.channel;
     //const VCpermissions = voiceChannel.permissionsFor(message.client.user);
 
-    const serverSettings = settings.get(message.guild.id);
+    const serverSettings = settingsMap.get(message.guild.id);
     const serverQueue = musicFuncs.getQueue().get(message.guild.id);
     const serverLang = translations[serverSettings.language];
     const prefix = serverSettings.prefix;
 
     // Message length
-    if (content.length >= serverSettings.maxMessageLength && serverSettings.maxMessageLength != -1) {
+    if (content.length >= serverSettings.maxMessageLength && serverSettings.maxMessageLength != -1)
         return deleteMsg(message, `Your message is too long! ${author}`, channel);
-    }
 
     // Log message
     if (serverSettings.logMessages) 
-        logMessage(message);
+        logs.add(message, logMessagesMap);
 
     // Blacklist
-    blacklistedPhrases.forEach(phrase => {
-        if (content.toLowerCase().includes(phrase)) {
-            if ((content[content.indexOf(phrase) - 1] == ' ' ||
-                !content[content.indexOf(phrase) - 1])
-                &&
-                (content[content.indexOf(phrase) + phrase.length] == ' ' ||
-                !content[content.indexOf(phrase) + phrase.length])) {
-                    if (serverSettings.deleteBannedPhrases)
-                        deleteMsg(message, `You wrote some bad words! ${author}`, channel);
-                
-                    if (serverSettings.banForBannedPhrases)
-                        banUser(author, `You wrote some bad words! ${author}`, author);
+    if (blacklist.checkOccurences(content, blacklistPhrases)) {
+        console.log("true");
+        if (serverSettings.deleteBannedPhrases)
+            deleteMsg(message, `You wrote some bad words! ${author}`, channel);
 
-                    return;
-            }
-        }
-    });
+        if (serverSettings.banForBannedPhrases)
+            banUser(author, `You wrote some bad words! ${author}`, author);
+    }
     
     // Send prefix
     if (content.toLowerCase() == "prefix")
@@ -267,8 +210,10 @@ client.on('message', async message => {
             if (!targetString || targetString.length == 0)
                 return sendMsg(`[ERROR] You must write your message inside of two " or ', and your message cannot be empty. ${author}`, channel);
 
-            if (targetChannel) return sendMsg(targetString, targetChannel);
-            else               return sendMsg(targetString, channel);
+            if (targetChannel) sendMsg(targetString, targetChannel);
+            else               sendMsg(targetString, channel);
+
+           // return deleteMsg(message);
         }
 
         else if (command.startsWith("log")) {
@@ -333,19 +278,17 @@ client.on('message', async message => {
 
 client.login(token);
 
+isExited = false;
 
-// Save settings on exit
+// Save settings and logs on exit
 ["exit", "SIGINT", "SIGUSR1", "SIGUSR2", "uncaughtException"].forEach(eventType => {
     process.on(eventType, () => {
-        const settingsJSON = JSON.stringify(Object.fromEntries(settings));
+        if (!isExited) {
+            settings.write(settingsMap, dataDir);
+            logs.write(logMessagesMap, dataDir);
 
-        fs.writeFileSync('./data/settings.json', settingsJSON, err => {
-            if (err)
-                return console.error("There was an error saving settings file!");
-        });
-
-        writeLogs(unloggedMessages);
-
-        process.exit();
+            isExited = true;
+            process.exit();
+        }
     });
 });
