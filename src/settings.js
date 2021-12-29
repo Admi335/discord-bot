@@ -1,9 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 
+const { sendMsg } = require('./discordFuncs.js');
+
+
+const isBool = (str) => {
+    return str == "true" || str == "false";
+};
+const isNumber = (str) => {
+    return !((isNaN(str) && isNaN(parseFloat(str))) || parseInt(str) < -1)
+};
 const isDirectory = fileName => {
     return fs.lstatSync(fileName).isDirectory();
 };
+
 
 function get(directory) {
     const settingsMap = new Map();
@@ -30,6 +40,50 @@ function get(directory) {
     return settingsMap;
 }
 
+function set(setting, value, settings, channel) {
+    const boolSettings = ["logMessages", "deleteBannedPhrases", "banForBannedPhrases"];
+    const numberSettings = ["maxMessageLength"];
+    const stringSettings = ["prefix", "language"];
+
+    let origValue;
+
+    if (!setting) {
+        return sendMsg("You have to specify which setting you want to change!", channel);
+    }
+
+    if (boolSettings.includes(setting)) {
+        if (isBool(value)) {
+            origValue = settings[setting];
+            settings[setting] = value == "true";
+
+            return sendMsg(`${setting} has been changed from "${origValue}" to "${value}"`, channel);
+        }
+        else {
+            return sendMsg("This can only be set to true and false!", channel);
+        }
+    }
+    else if (numberSettings.includes(setting)) {
+        if (isNumber(value)) {
+            origValue = settings[setting];
+            settings[setting] = parseInt(value);
+
+            return sendMsg(`${setting} has been changed from "${origValue}" to "${value}"`, channel);
+        }
+        else {
+            return sendMsg("This can only be set to a number", channel);
+        }
+    }
+    else if (stringSettings.includes(setting)) {
+        origValue = settings[setting];
+        settings[setting] = value;
+
+        return sendMsg(`${setting} has been changed from "${origValue}" to "${value}"`, channel);
+    }
+    else {
+        return sendMsg(`${setting} does not exist!`, channel);
+    }
+}
+
 function write(settingsMap, directory) {
     console.log("\nWriting settings files");
 
@@ -47,5 +101,6 @@ function write(settingsMap, directory) {
 
 module.exports = {
     get,
+    set,
     write
 };

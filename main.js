@@ -19,19 +19,15 @@
  */
 
 const fs = require('fs');
-const readline = require('readline');
 
 const blacklist = require('./src/blacklistPhrases.js');
 const settings = require('./src/settings.js');
 const logs = require('./src/logs.js');
+const musicFuncs = require('./src/music.js');
 
-const banUser = require('./src/discord/banUser.js');
-const deleteMsg = require('./src/discord/deleteMsg.js');
-const sendMsg = require('./src/discord/sendMsg.js');
+const { sendMsg, deleteMsg, banUser } = require('./src/discordFuncs.js');
 
 const findSubstring = require('./src/findSubstring.js');
-const set = require('./src/settings/set.js');
-const musicFuncs = require('./src/music.js');
 
 const translations = require('./src/translations.json');
 
@@ -210,14 +206,19 @@ client.on('message', async message => {
             if (!targetString || targetString.length == 0)
                 return sendMsg(`[ERROR] You must write your message inside of two " or ', and your message cannot be empty. ${author}`, channel);
 
-            if (targetChannel) sendMsg(targetString, targetChannel);
-            else               sendMsg(targetString, channel);
+            if (targetChannel) await sendMsg(targetString, targetChannel);
+            else               await sendMsg(targetString, channel);
 
-           // return deleteMsg(message);
+            return deleteMsg(message);
         }
 
         else if (command.startsWith("log")) {
-            return message.channel.send("Log file for this server:", { files: [`./data/logs/${message.guild.id}.log`] });
+            if (!targetString) return sendMsg("You need to specify a date", channel);
+
+            logPath = await logs.get(message.guild.id, targetString, dataDir);
+
+            if (logPath == "") return sendMsg("Log file for this date does not exist!", channel);
+            else               return message.channel.send("Log file for this server:", { files: [logPath] });
         }
 
     /* PLAYING MUSIC */
@@ -269,9 +270,9 @@ client.on('message', async message => {
     /* SETTINGS */
         else if (command.startsWith("set")) {
             const setting = command.split(" ")[1];
-            set(setting, targetString, serverSettings, channel);
+            settings.set(setting, targetString, serverSettings, channel);
             
-            return settings.set(message.guild.id, serverSettings);
+            return settingsMap.set(message.guild.id, serverSettings);
         }
     }
 });

@@ -5,15 +5,34 @@ function add(message, logMessagesMap) {
     let tempLog = logMessagesMap.get(message.guild.id);
 
     const d = new Date();
+    const time = (d.getUTCHours()   < 10 ? '0' : '') + d.getUTCHours()   + ':' +
+                 (d.getUTCMinutes() < 10 ? '0' : '') + d.getUTCMinutes() + ':' +
+                 (d.getUTCSeconds() < 10 ? '0' : '') + d.getUTCSeconds();
 
     tempLog.push([
-        `${d.getUTCHours()}:${d.getUTCMinutes()}:${d.getUTCSeconds()}`,
+        time,
         message.member.user.username,
         message.channel.name,
         message.content
     ]);
     
     logMessagesMap.set(message.guild.id, tempLog);
+}
+
+function get(serverID, date, directory) {
+    if (!date) return sendMsg("You need to specify a date", channel);
+    date.trim();
+
+    if ((date.match(/-/g) || []).length == 1) {
+        const d = new Date();
+        date += '-' + d.getUTCFullYear();
+    }
+
+    filePath = path.join(directory, serverID, date + '.log');
+    
+    return fs.promises.access(filePath, fs.F_OK)
+            .then(() => filePath)
+            .catch(() => "");
 }
 
 function write(logMessagesMap, directory) {
@@ -43,5 +62,6 @@ function write(logMessagesMap, directory) {
 
 module.exports = {
     add,
+    get,
     write
 };

@@ -12,7 +12,7 @@ const ytdl = require('ytdl-core');
 const geniusLyrics = require('genius-lyrics');
 const Genius = new geniusLyrics.Client();
 
-const sendMsg = require('./discord/sendMsg.js');
+const { sendMsg } = require('./discordFuncs.js');
 
 const queue = new Map();
 
