@@ -76,7 +76,7 @@ cd [folder's name]
 
 ```bash
 # If you have git installed
-git clone https://github.com/Admi335/Discord-bot.git
+git clone https://github.com/Admi335/raven-bot.git
 
 # otherwise unzip it with an unzip program
 ```
