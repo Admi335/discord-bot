@@ -8,6 +8,7 @@
 
 const { MessageEmbed, Client } = require('discord.js');
 const ytdl = require('ytdl-core');
+const yts = require('yt-search');
 
 const geniusLyrics = require('genius-lyrics');
 const Genius = new geniusLyrics.Client();
@@ -15,6 +16,33 @@ const Genius = new geniusLyrics.Client();
 const { sendMsg } = require('./discordFuncs.js');
 
 const queue = new Map();
+
+function findSong(query, message) {
+    if (!(query.includes('youtube.com') || query.includes('youtu.be'))) {
+        yts({ query: query }, (err, res) => {
+            if (err) return sendMsg("Couldn't find video", message.channel);
+
+            queueSong(message, res.videos[0].url, queue.get(message.guild.id));
+        });
+    }
+    else if (query.includes('list=')) {
+        let listId = query.slice(
+                        query.indexOf('list=') + 5,
+                        query.indexOf('index=') != -1 ? query.indexOf('index=') - 1 : undefined
+                     );
+
+        yts({ listId: listId }, async (err, playlist) => {
+            if (err) return sendMsg("Couldn't find playlist", message.channel);
+
+            for (let i = 0; i < playlist.videos.length; i++) {
+                await queueSong(message, `https://youtu.be/${playlist.videos[i].videoId}`, queue.get(message.guild.id));
+            }
+        });
+    }
+    else {
+        queueSong(message, query, queue.get(message.guild.id));
+    }
+}
 
 async function queueSong(message, url, serverQueue) {
 
@@ -64,7 +92,7 @@ async function queueSong(message, url, serverQueue) {
         lengthSeconds: songInfo.lengthSeconds,
         author: songAuthor,
         requestAuthorID: message.author.id,
-        thumbnails: songInfo.thumbnails
+        thumbnail: songInfo.thumbnails[songInfo.thumbnails.length - 1]
     };
 
     // Create a queue if one doesn't exist
@@ -97,7 +125,6 @@ async function queueSong(message, url, serverQueue) {
     // If a queue does exist, push the song into it
     else {
         serverQueue.songs.push(song);
-        console.log(serverQueue.songs);
 
         const queuedEmbed = new MessageEmbed()
             .setColor('#202020')
@@ -117,14 +144,18 @@ function play(guild, song) {
     }
 
     const dispatcher = serverQueue.connection
-        .play(ytdl(song.url))
+        .play(ytdl(song.url, { filter: 'audioonly' }))
         .on("finish", () => {
             serverQueue.songs.shift();
             play(guild, serverQueue.songs[0]);
         })
-        .on("error", error => console.error(error));
+        .on("error", err => {
+            console.error("Error while playing music: ", err);
+            serverQueue.songs.shift();
+            play(guild, serverQueue.songs[0]);
+        });
 
-    dispatcher.setVolumeLogarithmic(serverQueue.volume / 10);
+    dispatcher.setVolumeLogarithmic(serverQueue.volume / 7);
 
 
     // Now playing - embed
@@ -171,7 +202,7 @@ function getCurrentSong(serverQueue, channel) {
             { name: "Author", value: serverQueue.songs[0].author, inline: true },
             { name: "Length", value: time, inline: true },
         )
-        .setImage(serverQueue.songs[0].thumbnails[serverQueue.songs[0].thumbnails.length - 1].url);
+        .setImage(serverQueue.songs[0].thumbnail.url);
 
     if (!channel) return sendMsg(currentEmbed, serverQueue.textChannel);
     else          return sendMsg(currentEmbed, channel);
@@ -204,7 +235,7 @@ function getQueuedSongs(serverQueue, channel) {
     fields.push({ name: "Now playing:", value: fieldValues[0] });
             
     for (let i = 1; i < serverQueue.songs.length; i++)
-        fields.push({ name: `${i})`, value: fieldValues[i] });
+        fields.push({ name: `${i}.`, value: fieldValues[i] });
 
     const queueEmbed = new MessageEmbed()
         .setColor('#202020')
@@ -243,6 +274,7 @@ function getQueue() {
 }
 
 module.exports = {
+    findSong,
     queueSong,
     skipSong,
     stopPlaying,

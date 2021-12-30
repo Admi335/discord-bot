@@ -44,6 +44,19 @@ sudo apt-get install npm
 sudo pacman -S npm
 ```
 
+3. ffmpeg
+
+```bash
+# Ubuntu
+sudo apt-get install ffmpeg
+
+#Fedora
+sudo dnf install ffmpeg
+
+# Arch linux
+sudo pacman -S ffmpeg
+```
+
 #### macOS
 
 1. node.js & npm
@@ -58,6 +71,7 @@ brew install node
 
 Or you can install it from here:
 https://nodejs.org/en/download/package-manager/
+https://www.ffmpeg.org/download.html
 
 ### Installing
 
@@ -84,7 +98,7 @@ git clone https://github.com/Admi335/raven-bot.git
 3. Install the modules
 
 ```bash
-npm install discord.js ffmpeg fluent-ffmpeg @discordjs/opus ytdl-core genius-lyrics
+npm install discord.js ffmpeg fluent-ffmpeg @discordjs/opus ytdl-core yt-seach genius-lyrics
 ```
 
 ## Deployment
@@ -147,9 +161,10 @@ The bot should become online and working.
 
 - [Node.js](https://nodejs.org/) - JavaScript runtime environment
 - [discord.js](https://discord.js.org/) - Node.js module used for interacting with the Discord API
-- [ytdl](https://www.npmjs.com/package/ytdl) - YouTube downloader written in JavaScript
+- [ytdl](https://github.com/fent/node-ytdl#readme) - YouTube downloader written in JavaScript
+- [yt-seach](https://github.com/talmobi/yt-search#readme) - Simple YouTube search API and CLI
 - [FFmpeg](https://ffmpeg.org/) - Complete, cross-platform solution to record, convert and stream audio and video
-- [genius-lyrics](https://www.npmjs.com/package/genius-lyrics) - Simple lyrics fetcher that uses [Genius](https://genius.com/)
+- [genius-lyrics](https://genius-lyrics.js.org/) - Simple lyrics fetcher that uses [Genius](https://genius.com/)
 
 ## Authors
 

@@ -72,7 +72,7 @@ client.on('message', async message => {
         settingsMap.set(message.guild.id, {
             prefix: "!",
             language: "en",
-            logMessages: true,
+            logMessages: false,
             maxMessageLength: -1,
             deleteBannedPhrases: true,
             banForBannedPhrases: false
@@ -225,8 +225,11 @@ client.on('message', async message => {
         else if (command.startsWith("play")) {
             if (!voiceChannel)
                 return sendMsg("You need to be in a voice channel to play music!", channel);
+
+            if (!targetString)
+                return sendMsg("No link/query specified, you have to include it between two \" or \'", channel);
         
-            return musicFuncs.queueSong(message, targetString, serverQueue);
+            return musicFuncs.findSong(targetString, message);
         }
 
         else if (command.startsWith("skip")) {
@@ -251,7 +254,7 @@ client.on('message', async message => {
 
         else if (command.startsWith("current")) {
             if (!serverQueue)
-                return sendMsg("There is no song to skip!", channel);
+                return sendMsg("There is no song playing!", channel);
                 
             return musicFuncs.getCurrentSong(serverQueue, channel);
         }
@@ -264,7 +267,7 @@ client.on('message', async message => {
         }
 
         else if (command.startsWith("lyrics")) {
-            return musicFuncs.getLyrics(serverQueue, channel);            
+            return await musicFuncs.getLyrics(serverQueue, channel);            
         }
 
     /* SETTINGS */
