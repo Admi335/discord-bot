@@ -17,6 +17,8 @@
  * You can contact me, the creator of this program, via this email address: rihaadam1@seznam.cz
  */
 
+const addon = require('./addon.js');
+
 const fs = require('fs');
 
 const blacklist = require('./src/blacklistPhrases.js');
