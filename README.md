@@ -103,7 +103,7 @@ npm install discord.js ffmpeg fluent-ffmpeg @discordjs/opus ytdl-core yt-search 
 
 ## Deployment
 
-### NOTE: YOU MUST DEPLOY IT UNDER THE GPL LICENSE, ACCORDING TO THE GNU GENERAL PUBLIC LICENSE TERMS AND CONDITIONS
+### NOTE: YOU MUST DEPLOY IT UNDER THE GPL-3.0 LICENSE, ACCORDING TO THE GNU GENERAL PUBLIC LICENSE TERMS AND CONDITIONS
 
 To deploy the bot go to this website: https://discord.com/developers/applications, sign in or sign up, create a new application and set the application up. Then go to this website: https://discordapi.com/permissions.html, tick what you need, fill in the Client ID, which can be obtained form the applications page, add the bot to your Discord server and put the token of your bot in the config.json file (the token can be found on the application page as well).
 
@@ -172,4 +172,4 @@ The bot should become online and working.
 
 ## License
 
-This project is licensed under the GPLv2 License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the GPLv3 License - see the [LICENSE](LICENSE) file for details
