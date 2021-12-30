@@ -18,7 +18,7 @@
  */
 
 const { MessageEmbed, Client } = require('discord.js');
-const ytdl = require('ytdl-core');
+const ytdl = require('ytdl-core-discord');
 const yts = require('yt-search');
 
 const geniusLyrics = require('genius-lyrics');
