@@ -98,7 +98,7 @@ git clone https://github.com/Admi335/raven-bot.git
 3. Install the modules
 
 ```bash
-npm install discord.js ffmpeg fluent-ffmpeg @discordjs/opus ytdl-core yt-seach genius-lyrics
+npm install discord.js ffmpeg fluent-ffmpeg @discordjs/opus ytdl-core yt-search genius-lyrics
 ```
 
 ## Deployment
@@ -162,7 +162,7 @@ The bot should become online and working.
 - [Node.js](https://nodejs.org/) - JavaScript runtime environment
 - [discord.js](https://discord.js.org/) - Node.js module used for interacting with the Discord API
 - [ytdl](https://github.com/fent/node-ytdl#readme) - YouTube downloader written in JavaScript
-- [yt-seach](https://github.com/talmobi/yt-search#readme) - Simple YouTube search API and CLI
+- [yt-search](https://github.com/talmobi/yt-search#readme) - Simple YouTube search API and CLI
 - [FFmpeg](https://ffmpeg.org/) - Complete, cross-platform solution to record, convert and stream audio and video
 - [genius-lyrics](https://genius-lyrics.js.org/) - Simple lyrics fetcher that uses [Genius](https://genius.com/)
 
