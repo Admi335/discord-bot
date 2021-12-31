@@ -39,16 +39,19 @@ function write(logMessagesMap, directory) {
     console.log("\nWriting log files");
 
     const d = new Date();
+    const date = (d.getUTCMonth() + 1 < 10 ? '0' : '') + d.getUTCMonth() + 1 + '-' +
+                 (d.getUTCDate()      < 10 ? '0' : '') + d.getUTCDate()      + '-' +
+                                                         d.getUTCFullYear();
 
     logMessagesMap.forEach((value, key) => {
         if (value.length > 0) {
             let content = "";
 
             for (let i = 0; i < value.length; i++) {
-                content += `Time: ${value[i][0]} UTC\nUser: ${value[i][1]}\nChannel: ${value[i][2]}\nContent:\n${value[i][3]}\n--------------------------------------\n\n\n`;
+                content += `Time: ${value[i][0]} UTC\nUser: ${value[i][1]}\nChannel: ${value[i][2]}\nContent:\n--------------------------------------\n${value[i][3]}\n--------------------------------------\n\n\n`;
             }
 
-            fs.writeFileSync(path.join(directory, key, `${d.getUTCMonth() + 1}-${d.getUTCDate()}-${d.getUTCFullYear()}.log`), content, { flag: 'a+' }, err => {
+            fs.writeFileSync(path.join(directory, key, `${date}.log`), content, { flag: 'a+' }, err => {
                 if (err)
                     return console.error(`\nFailed to save logs for server ID ${key}!\nError: ` + err);
             });
