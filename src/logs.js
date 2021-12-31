@@ -45,7 +45,7 @@ function write(logMessagesMap, directory) {
             let content = "";
 
             for (let i = 0; i < value.length; i++) {
-                content += `Time: ${value[i][0]}\nUser: ${value[i][1]}\nChannel: ${value[i][2]}\nContent:\n${value[i][3]}\n--------------------------------------\n\n\n`;
+                content += `Time: ${value[i][0]} UTC\nUser: ${value[i][1]}\nChannel: ${value[i][2]}\nContent:\n${value[i][3]}\n--------------------------------------\n\n\n`;
             }
 
             fs.writeFileSync(path.join(directory, key, `${d.getUTCMonth() + 1}-${d.getUTCDate()}-${d.getUTCFullYear()}.log`), content, { flag: 'a+' }, err => {
@@ -55,7 +55,7 @@ function write(logMessagesMap, directory) {
         }
     });
 
-    console.log("Completed writing log files");
+    console.log("Completed writing log files");RealAtomek/raven-bot
 
     logMessagesMap.clear();
 }
