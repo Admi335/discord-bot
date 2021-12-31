@@ -19,8 +19,14 @@ function add(message, logMessagesMap) {
     logMessagesMap.set(message.guild.id, tempLog);
 }
 
-function get(serverID, date, directory) {
-    if (!date) return sendMsg("You need to specify a date", channel);
+function get(serverID, date = "", directory) {
+    if (!date || date == "") {
+        const d = new Date();
+        date = (d.getUTCMonth() + 1 < 10 ? '0' : '') + d.getUTCMonth() + 1 + '-' +
+               (d.getUTCDate()      < 10 ? '0' : '') + d.getUTCDate()      + '-' +
+                                                       d.getUTCFullYear();
+    };
+    
     date.trim();
 
     if ((date.match(/-/g) || []).length == 1) {
