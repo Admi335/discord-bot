@@ -212,8 +212,6 @@ client.on('message', async message => {
         }
 
         else if (command.startsWith("log")) {
-            if (!targetString) return sendMsg("You need to specify a date", channel);
-
             logPath = await logs.get(message.guild.id, targetString, dataDir);
 
             if (logPath == "") return sendMsg("Log file for this date does not exist!", channel);
