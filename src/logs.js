@@ -22,8 +22,8 @@ function add(message, logMessagesMap) {
 function get(serverID, date = "", directory) {
     if (!date || date == "") {
         const d = new Date();
-        date = (d.getUTCMonth() + 1 < 10 ? '0' : '') + d.getUTCMonth() + 1 + '-' +
-               (d.getUTCDate()      < 10 ? '0' : '') + d.getUTCDate()      + '-' +
+        date = (d.getUTCMonth() + 1 < 10 ? '0' : '') + (d.getUTCMonth() + 1) + '-' +
+               (d.getUTCDate()      < 10 ? '0' : '') + d.getUTCDate()        + '-' +
                                                        d.getUTCFullYear();
     };
     
@@ -45,8 +45,8 @@ function write(logMessagesMap, directory) {
     console.log("\nWriting log files");
 
     const d = new Date();
-    const date = (d.getUTCMonth() + 1 < 10 ? '0' : '') + d.getUTCMonth() + 1 + '-' +
-                 (d.getUTCDate()      < 10 ? '0' : '') + d.getUTCDate()      + '-' +
+    const date = (d.getUTCMonth() + 1 < 10 ? '0' : '') + (d.getUTCMonth() + 1) + '-' +
+                 (d.getUTCDate()      < 10 ? '0' : '') + d.getUTCDate()        + '-' +
                                                          d.getUTCFullYear();
 
     logMessagesMap.forEach((value, key) => {
