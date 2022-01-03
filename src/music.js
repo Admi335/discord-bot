@@ -17,7 +17,8 @@
  * You can contact me, the creator of this program, via this email address: rihaadam1@seznam.cz
  */
 
-const { MessageEmbed, Client } = require('discord.js');
+const { MessageEmbed } = require('discord.js');
+const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
 const ytdl = require('ytdl-core');
 const yts = require('yt-search');
 
@@ -121,9 +122,13 @@ async function queueSong(message, url, serverQueue) {
         queueContruct.songs.push(song);
 
         try {
-            let connection = await message.member.voice.channel.join();
+            let connection = await joinVoiceChannel({
+                channelId: message.member.voice.channel.id,
+                guildId: message.guild.id,
+                adapterCreator: message.guild.voiceAdapterCreator
+            });
             queueContruct.connection = connection;
-
+            
             play(message.guild, queueContruct.songs[0]);
         } catch (err) {
             console.log(err);
@@ -145,7 +150,7 @@ async function queueSong(message, url, serverQueue) {
     }
 }
 
-function play(guild, song) {
+async function play(guild, song) {
     const serverQueue = queue.get(guild.id);
 
     if (!song) {
@@ -154,7 +159,31 @@ function play(guild, song) {
         return;
     }
 
-    const dispatcher = serverQueue.connection
+    try {
+        console.log("creating player");
+        const stream = await ytdl(song.url, { filter: 'audioonly' });
+
+        const player = createAudioPlayer();
+        const resource = createAudioResource(stream);
+        await serverQueue.connection.subscribe(player);
+
+        async function pl() {
+            await player.play(resource);
+            player.on("error", err => {
+                console.log("Error with player: ", err);
+            });
+        }
+        await pl();
+
+        //serverQueue.connection.subscribe(player);
+        //serverQueue.connection.setVolumeLogarithmic(serverQueue.volume / 7);
+    } catch (err) {
+        console.error("Error while playing music: ", err);
+        /*serverQueue.songs.shift();
+        play(guild, serverQueue.songs[0]);*/
+    }
+
+    /*const dispatcher = serverQueue.connection
         .play(ytdl(song.url, { filter: 'audioonly' }))
         .on("finish", () => {
             serverQueue.songs.shift();
@@ -166,7 +195,7 @@ function play(guild, song) {
             play(guild, serverQueue.songs[0]);
         });
 
-    dispatcher.setVolumeLogarithmic(serverQueue.volume / 7);
+    dispatcher.setVolumeLogarithmic(serverQueue.volume / 7);*/
 
 
     // Now playing - embed
