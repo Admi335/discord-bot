@@ -22,7 +22,6 @@ const fs = require('fs');
 const blacklist = require('./src/blacklistPhrases.js');
 const settings = require('./src/settings.js');
 const logs = require('./src/logs.js');
-const musicFuncs = require('./src/music.js');
 
 const { sendMsg, deleteMsg, banUser } = require('./src/discordFuncs.js');
 
@@ -164,7 +163,7 @@ client.on('messageCreate', async message => {
     //const VCpermissions = voiceChannel.permissionsFor(message.client.user);
 
     const serverSettings = settingsMap.get(message.guild.id);
-    const serverQueue = musicFuncs.getQueue().get(message.guild.id);
+   // const serverQueue = musicFuncs.getQueue().get(message.guild.id);
     const serverLang = translations[serverSettings.language];
     const prefix = serverSettings.prefix;
 
@@ -299,56 +298,7 @@ client.on('messageCreate', async message => {
             if (logPath == "") return sendMsg("Log file for this date does not exist!", channel);
             else               return message.channel.send("Log file for this server:", { files: [logPath] });
         }
-
-    /* PLAYING MUSIC */
-        else if (command.startsWith("play")) {
-            if (!voiceChannel)
-                return sendMsg("You need to be in a voice channel to play music!", channel);
-
-            if (!targetString)
-                return sendMsg("No link/query specified, you have to include it between two \" or \'", channel);
         
-            return musicFuncs.findSong(targetString, message);
-        }
-
-        else if (command.startsWith("skip")) {
-            if (!voiceChannel)
-                return sendMsg("You have to be in a voice channel to skip the music!", channel);
-
-            if (!serverQueue)
-                return sendMsg("There is no song that I could skip!", channel);
-
-            return musicFuncs.skipSong(serverQueue, channel);
-        }
-
-        else if (command.startsWith("stop")) {
-            if (!voiceChannel)
-                return sendMsg("You have to be in a voice channel to stop the music!", channel);
-
-            if (!serverQueue)
-                return sendMsg("There is no song that I could stop!", channel);
-
-            return musicFuncs.stopPlaying(serverQueue, channel);
-        }
-
-        else if (command.startsWith("current")) {
-            if (!serverQueue)
-                return sendMsg("There is no song playing!", channel);
-                
-            return musicFuncs.getCurrentSong(serverQueue, channel);
-        }
-
-        else if (command.startsWith("queue")) {
-            if (!serverQueue) 
-                return sendMsg("There are no songs in the queue!", channel);
-            
-            return musicFuncs.getQueuedSongs(serverQueue, channel);
-        }
-
-        else if (command.startsWith("lyrics")) {
-            return await musicFuncs.getLyrics(serverQueue, channel);            
-        }
-
     /* SETTINGS */
         else if (command.startsWith("set")) {
             const setting = command.split(" ")[1];
