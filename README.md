@@ -11,7 +11,7 @@ You can check if Node.js is installed on your computer by typing in the terminal
 
 ```bash
 $ node -v
-v15.14.0
+v17.1.0
 ```
 
 Node.js is installed on your computer and you can skip this part.
@@ -98,7 +98,7 @@ git clone https://github.com/Admi335/raven-bot.git
 3. Install the modules
 
 ```bash
-npm install discord.js ffmpeg fluent-ffmpeg @discordjs/opus ytdl-core yt-search genius-lyrics
+npm install discord.js @discordjs/rest discord-api-types @discordjs/opus discord-player ffmpeg fluent-ffmpeg
 ```
 
 ## Deployment
@@ -161,10 +161,8 @@ The bot should become online and working.
 
 - [Node.js](https://nodejs.org/) - JavaScript runtime environment
 - [discord.js](https://discord.js.org/) - Node.js module used for interacting with the Discord API
-- [ytdl](https://github.com/fent/node-ytdl#readme) - YouTube downloader written in JavaScript
-- [yt-search](https://github.com/talmobi/yt-search#readme) - Simple YouTube search API and CLI
+- [discord-player](https://discord-player.js.org/) - Complete framework to simplify the implementation of music commands using discords.js
 - [FFmpeg](https://ffmpeg.org/) - Complete, cross-platform solution to record, convert and stream audio and video
-- [genius-lyrics](https://genius-lyrics.js.org/) - Simple lyrics fetcher that uses [Genius](https://genius.com/)
 
 ## Authors
 
