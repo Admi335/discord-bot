@@ -35,7 +35,7 @@ const translations = require('./src/translations.json');
 
 // Discord
 const { Client, Intents, MessageEmbed } = require('discord.js');
-const { token } = require('./config.json');
+const { token, applicationId } = require('./config.json');
 const client = new Client({
     intents: [
         Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES
@@ -78,7 +78,7 @@ const rest = new REST({ version: '9' }).setToken(token);
         console.log("Started refreshing application (/) commands.");
 
         await rest.put(
-            Routes.applicationCommands('720678047593922670'),
+            Routes.applicationCommands(applicationId),
             { body: commands }
         );
 
@@ -141,8 +141,124 @@ client.on('interactionCreate', async interaction => {
             return await interaction.followUp({ content: `❌ | Track: **${query}** not found!` });
         
         queue.play(track);
+        return interaction.followUp({ content: `Queued **${query}**!` });
+    }
+    else if (interaction.commandName === "stop") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
 
-        return await interaction.followUp({ content: `Now playing **${query}**!` });
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        queue.destroy();
+        return interaction.followUp({ content: "🛑 | Stopped the player!" });
+    }
+    else if (interaction.commandName === "skip") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return await interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const skipped = queue.skip();
+        return interaction.followUp({ content: skipped ? `✅ | Skipped **${queue.current}**!` : "❌ | Something went wrong!" });
+    }
+    else if (interaction.commandName === "pause") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const paused = queue.setPaused(true);
+        return interaction.followUp({ content: paused ? "⏸ | Paused!" : "❌ | Something went wrong!" });
+    }
+    else if (interaction.commandName === "resume") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const paused = queue.setPaused(false);
+        return interaction.followUp({ content: !paused ? "❌ | Something went wrong!" : "▶ | Resumed!" });
+    }
+    else if (interaction.commandName === "volume") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const vol = interaction.options.get("amount");
+
+        if (!vol) 
+            return interaction.followUp({ content: `🎧 | Current volume is **${queue.volume}**%!` }); 
+        if ((vol.value) < 0 || (vol.value) > 100)
+            return interaction.followUp({ content: "❌ | Volume range must be 0-100" });
+        
+        const success = queue.setVolume(vol.value);
+        return interaction.followUp({ content: success ? `✅ | Volume set to **${vol.value}%**!` : "❌ | Something went wrong!" });
+    }
+    else if (interaction.commandName === "loop") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const loopMode = interaction.options.get("mode").value;
+
+        const success = queue.setRepeatMode(loopMode);
+        const mode = loopMode === QueueRepeatMode.TRACK ? "🔂" : loopMode === QueueRepeatMode.QUEUE ? "🔁" : "▶";
+        return interaction.followUp({ content: success ? `${mode} | Updated loop mode!` : "❌ | Could not update loop mode!" });
+    }
+    else if (interaction.commandName === "np") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const progress = queue.createProgressBar();
+        const perc = queue.getPlayerTimestamp();
+
+        return interaction.followUp({
+            embeds: [{
+                title: "Now playing",
+                description: `🎶 | **${queue.current.title}**! (\`${perc.progress}%\`)`,
+                fields: [{
+                    name: "\u200b",
+                    value: progress
+                }],
+                color: 0xffffff
+            }]
+        });
+    }
+    else if (interaction.commandName === "queue") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const currentTrack = queue.current;
+        const tracks = queue.tracks.slice(0, 10).map((m, i) => {
+            return `${i + 1}. **${m.title}** ([link](${m.url}))`;
+        });
+
+        return interaction.followUp({
+            embeds: [{
+                title: "Server Queue",
+                description: `${tracks.join("\n")}${
+                    queue.tracks.length > tracks.length
+                        ? `\n...${queue.tracks.length - tracks.length === 1 ? `${queue.tracks.length - tracks.length} more track` : `${queue.tracks.length - tracks.length} more tracks`}`
+                        : ""
+                }`,
+                color: 0xff0000,
+                fields: [{ name: "Now Playing", value: `🎶 | **${currentTrack.title}** ([link](${currentTrack.url}))` }]
+            }]
+        });
     }
 });
 
