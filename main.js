@@ -34,7 +34,7 @@ const translations = require('./src/translations.json');
 /*-----------------------------------------------------*/
 
 // Discord
-const { Client, Intents, MessageEmbed } = require('discord.js');
+const { Client, Intents, MessageEmbed, TextChannel } = require('discord.js');
 const { token } = require('./config.json');
 const client = new Client({
     intents: [
@@ -50,6 +50,16 @@ const logMessagesMap = new Map();
 setInterval(logs.write, 60 * 1000, logMessagesMap, dataDir); // Save logs every 60 seconds
 
 
+// Addons
+const addonFiles = fs.readdirSync('./addons/').filter(file => file.endsWith('.js'));
+
+for (const file of addonFiles) {
+    const addon = require(`./addons/${file}`);
+    addon(client);
+}
+
+
+// Slash commands
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 
@@ -68,7 +78,7 @@ const rest = new REST({ version: '9' }).setToken(token);
         console.log("Started refreshing application (/) commands.");
 
         await rest.put(
-            Routes.applicationGuildCommands('720678047593922670', '779237465549438986'),
+            Routes.applicationCommands('720678047593922670'),
             { body: commands }
         );
 
@@ -79,6 +89,7 @@ const rest = new REST({ version: '9' }).setToken(token);
 })();
 
 
+// Discord player
 const { Player } = require('discord-player');
 const player = new Player(client);
 player.on("trackStart", (queue, track) => {
@@ -90,6 +101,10 @@ player.on("trackStart", (queue, track) => {
 
 client.once('ready', () => {
     console.log('\nConnected!');
+    client.application.commands.fetch("927620619212816415").then(command => {
+        command.delete();
+        console.log(command.guildId);
+    }).catch(console.error);
 });
 
 client.once('reconnecting', () => {
