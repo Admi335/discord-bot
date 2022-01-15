@@ -34,7 +34,7 @@ const translations = require('./src/translations.json');
 /*-----------------------------------------------------*/
 
 // Discord
-const { Client, Intents, MessageEmbed, TextChannel } = require('discord.js');
+const { Client, Intents, MessageEmbed } = require('discord.js');
 const { token } = require('./config.json');
 const client = new Client({
     intents: [
@@ -101,10 +101,6 @@ player.on("trackStart", (queue, track) => {
 
 client.once('ready', () => {
     console.log('\nConnected!');
-    client.application.commands.fetch("927620619212816415").then(command => {
-        command.delete();
-        console.log(command.guildId);
-    }).catch(console.error);
 });
 
 client.once('reconnecting', () => {
