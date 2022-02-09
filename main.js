@@ -22,7 +22,6 @@ const fs = require('fs');
 const blacklist = require('./src/blacklistPhrases.js');
 const settings = require('./src/settings.js');
 const logs = require('./src/logs.js');
-const musicFuncs = require('./src/music.js');
 
 const { sendMsg, deleteMsg, banUser } = require('./src/discordFuncs.js');
 
@@ -35,9 +34,13 @@ const translations = require('./src/translations.json');
 /*-----------------------------------------------------*/
 
 // Discord
-const Discord = require('discord.js');
-const { token } = require('./config.json');
-const client = new Discord.Client();
+const { Client, Intents, MessageEmbed } = require('discord.js');
+const { token, applicationId } = require('./config.json');
+const client = new Client({
+    intents: [
+        Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES
+    ]
+});
 
 const dataDir = './data/';
 
@@ -45,6 +48,55 @@ const blacklistPhrases = blacklist.get('./phrases_blacklist.txt');
 const settingsMap = settings.get(dataDir);
 const logMessagesMap = new Map();
 setInterval(logs.write, 60 * 1000, logMessagesMap, dataDir); // Save logs every 60 seconds
+
+
+// Addons
+const addonFiles = fs.readdirSync('./addons/').filter(file => file.endsWith('.js'));
+
+for (const file of addonFiles) {
+    const addon = require(`./addons/${file}`);
+    addon(client);
+}
+
+
+// Slash commands
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
+
+const commands = [];
+const commandFiles = fs.readdirSync('./src/commands/').filter(file => file.endsWith('.js'));
+
+for (const file of commandFiles) {
+    const command = require(`./src/commands/${file}`);
+    commands.push(command.data.toJSON());
+}
+
+const rest = new REST({ version: '9' }).setToken(token);
+
+(async () => {
+    try {
+        console.log("Started refreshing application (/) commands.");
+
+        await rest.put(
+            Routes.applicationCommands(applicationId),
+            { body: commands }
+        );
+
+        console.log('Successfully reloaded application (/) commands.');
+    } catch (err) {
+        console.error(err);
+    }
+})();
+
+
+// Discord player
+const { Player } = require('discord-player');
+const player = new Player(client);
+player.on("trackStart", (queue, track) => {
+    try {queue.metadata.channel.send(`🎶 | Now playing **${track.title}**!`);} catch (err) {
+        console.log("trackStart err: ", err);
+    }
+});
 
 
 client.once('ready', () => {
@@ -59,8 +111,158 @@ client.once('disconnect', () => {
     console.log('\nDisconnected!');
 });
 
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isCommand()) return;
 
-client.on('message', async message => {
+    if (interaction.commandName === "play") {
+        if (!interaction.member.voice.channelId)
+            return await interaction.reply({ content: "You need to be in a voice channel to play music!", ephemeral: true });
+
+        const query = interaction.options.get("query").value;
+        const queue = player.createQueue(interaction.guild, {
+            metadata: {
+                channel: interaction.channel
+            }
+        });
+        
+        try {
+            if (!queue.connection) await queue.connect(interaction.member.voice.channel);
+        } catch {
+            queue.destroy();
+            return await interaction.reply({ content: "Couldn't join the voice channel!", ephemeral: true });
+        }
+        
+        await interaction.deferReply();
+        const track = await player.search(
+            query, { requestedBy: interaction.user }
+        ).then(x => x.tracks[0]);
+
+        if (!track)
+            return await interaction.followUp({ content: `❌ | Track: **${query}** not found!` });
+        
+        queue.play(track);
+        return interaction.followUp({ content: `Queued **${query}**!` });
+    }
+    else if (interaction.commandName === "stop") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        queue.destroy();
+        return interaction.followUp({ content: "🛑 | Stopped the player!" });
+    }
+    else if (interaction.commandName === "skip") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return await interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const skipped = queue.skip();
+        return interaction.followUp({ content: skipped ? `✅ | Skipped **${queue.current}**!` : "❌ | Something went wrong!" });
+    }
+    else if (interaction.commandName === "pause") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const paused = queue.setPaused(true);
+        return interaction.followUp({ content: paused ? "⏸ | Paused!" : "❌ | Something went wrong!" });
+    }
+    else if (interaction.commandName === "resume") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const paused = queue.setPaused(false);
+        return interaction.followUp({ content: !paused ? "❌ | Something went wrong!" : "▶ | Resumed!" });
+    }
+    else if (interaction.commandName === "volume") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const vol = interaction.options.get("amount");
+
+        if (!vol) 
+            return interaction.followUp({ content: `🎧 | Current volume is **${queue.volume}**%!` }); 
+        if ((vol.value) < 0 || (vol.value) > 100)
+            return interaction.followUp({ content: "❌ | Volume range must be 0-100" });
+        
+        const success = queue.setVolume(vol.value);
+        return interaction.followUp({ content: success ? `✅ | Volume set to **${vol.value}%**!` : "❌ | Something went wrong!" });
+    }
+    else if (interaction.commandName === "loop") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const loopMode = interaction.options.get("mode").value;
+
+        const success = queue.setRepeatMode(loopMode);
+        const mode = loopMode === QueueRepeatMode.TRACK ? "🔂" : loopMode === QueueRepeatMode.QUEUE ? "🔁" : "▶";
+        return interaction.followUp({ content: success ? `${mode} | Updated loop mode!` : "❌ | Could not update loop mode!" });
+    }
+    else if (interaction.commandName === "np") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const progress = queue.createProgressBar();
+        const perc = queue.getPlayerTimestamp();
+
+        return interaction.followUp({
+            embeds: [{
+                title: "Now playing",
+                description: `🎶 | **${queue.current.title}**! (\`${perc.progress}%\`)`,
+                fields: [{
+                    name: "\u200b",
+                    value: progress
+                }],
+                color: 0xffffff
+            }]
+        });
+    }
+    else if (interaction.commandName === "queue") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        if (!queue || !queue.playing)
+            return interaction.followUp({ content: "❌ | No music is being played!" });
+
+        const currentTrack = queue.current;
+        const tracks = queue.tracks.slice(0, 10).map((m, i) => {
+            return `${i + 1}. **${m.title}** ([link](${m.url}))`;
+        });
+
+        return interaction.followUp({
+            embeds: [{
+                title: "Server Queue",
+                description: `${tracks.join("\n")}${
+                    queue.tracks.length > tracks.length
+                        ? `\n...${queue.tracks.length - tracks.length === 1 ? `${queue.tracks.length - tracks.length} more track` : `${queue.tracks.length - tracks.length} more tracks`}`
+                        : ""
+                }`,
+                color: 0xff0000,
+                fields: [{ name: "Now Playing", value: `🎶 | **${currentTrack.title}** ([link](${currentTrack.url}))` }]
+            }]
+        });
+    }
+});
+
+client.on('messageCreate', async message => {
     if (message.author.bot) return; // Check if author is bot
 
     if (!logMessagesMap.has(message.guild.id)) {
@@ -88,7 +290,7 @@ client.on('message', async message => {
     //const VCpermissions = voiceChannel.permissionsFor(message.client.user);
 
     const serverSettings = settingsMap.get(message.guild.id);
-    const serverQueue = musicFuncs.getQueue().get(message.guild.id);
+   // const serverQueue = musicFuncs.getQueue().get(message.guild.id);
     const serverLang = translations[serverSettings.language];
     const prefix = serverSettings.prefix;
 
@@ -168,17 +370,21 @@ client.on('message', async message => {
                 embedDescription = helpTranslation.adminDescription;
             }
 
-            const helpEmbed = new Discord.MessageEmbed()
+            const helpEmbed = new MessageEmbed()
                 .setColor('#FF0000')
                 .setTitle(embedTitle)
                 .setDescription(embedDescription)
                 .addFields(commandsFields);
             
-            return sendMsg(helpEmbed, channel);
+            try {
+                message.channel.send({ embeds: [helpEmbed] });
+            } catch (err) {
+                console.log("Embed err: ", err);
+            }
         }
 
         else if (command.startsWith("settings") || command.startsWith("options")) {
-            const settingsEmbed = new Discord.MessageEmbed()
+            const settingsEmbed = new MessageEmbed()
                 .setColor('#FF6666')
                 .setTitle('Settings')
                 .setDescription('List of all settings available')
@@ -217,56 +423,7 @@ client.on('message', async message => {
             if (logPath == "") return sendMsg("Log file for this date does not exist!", channel);
             else               return message.channel.send("Log file for this server:", { files: [logPath] });
         }
-
-    /* PLAYING MUSIC */
-        else if (command.startsWith("play")) {
-            if (!voiceChannel)
-                return sendMsg("You need to be in a voice channel to play music!", channel);
-
-            if (!targetString)
-                return sendMsg("No link/query specified, you have to include it between two \" or \'", channel);
         
-            return musicFuncs.findSong(targetString, message);
-        }
-
-        else if (command.startsWith("skip")) {
-            if (!voiceChannel)
-                return sendMsg("You have to be in a voice channel to skip the music!", channel);
-
-            if (!serverQueue)
-                return sendMsg("There is no song that I could skip!", channel);
-
-            return musicFuncs.skipSong(serverQueue, channel);
-        }
-
-        else if (command.startsWith("stop")) {
-            if (!voiceChannel)
-                return sendMsg("You have to be in a voice channel to stop the music!", channel);
-
-            if (!serverQueue)
-                return sendMsg("There is no song that I could stop!", channel);
-
-            return musicFuncs.stopPlaying(serverQueue, channel);
-        }
-
-        else if (command.startsWith("current")) {
-            if (!serverQueue)
-                return sendMsg("There is no song playing!", channel);
-                
-            return musicFuncs.getCurrentSong(serverQueue, channel);
-        }
-
-        else if (command.startsWith("queue")) {
-            if (!serverQueue) 
-                return sendMsg("There are no songs in the queue!", channel);
-            
-            return musicFuncs.getQueuedSongs(serverQueue, channel);
-        }
-
-        else if (command.startsWith("lyrics")) {
-            return await musicFuncs.getLyrics(serverQueue, channel);            
-        }
-
     /* SETTINGS */
         else if (command.startsWith("set")) {
             const setting = command.split(" ")[1];

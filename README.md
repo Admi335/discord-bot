@@ -11,7 +11,7 @@ You can check if Node.js is installed on your computer by typing in the terminal
 
 ```bash
 $ node -v
-v15.14.0
+v17.1.0
 ```
 
 Node.js is installed on your computer and you can skip this part.
@@ -98,12 +98,12 @@ git clone https://github.com/Admi335/raven-bot.git
 3. Install the modules
 
 ```bash
-npm install discord.js ffmpeg fluent-ffmpeg @discordjs/opus ytdl-core yt-search genius-lyrics
+npm install discord.js @discordjs/rest discord-api-types @discordjs/opus discord-player ffmpeg fluent-ffmpeg
 ```
 
 ## Deployment
 
-### NOTE: YOU MUST DEPLOY IT UNDER THE GPL-3.0 LICENSE, ACCORDING TO THE GNU GENERAL PUBLIC LICENSE TERMS AND CONDITIONS
+### NOTE: YOU MUST DEPLOY IT UNDER THE GPL LICENSE, ACCORDING TO THE GNU GENERAL PUBLIC LICENSE TERMS AND CONDITIONS
 
 To deploy the bot go to this website: https://discord.com/developers/applications, sign in or sign up, create a new application and set the application up. Then go to this website: https://discordapi.com/permissions.html, tick what you need, fill in the Client ID, which can be obtained form the applications page, add the bot to your Discord server and put the token of your bot in the config.json file (the token can be found on the application page as well).
 
@@ -161,10 +161,8 @@ The bot should become online and working.
 
 - [Node.js](https://nodejs.org/) - JavaScript runtime environment
 - [discord.js](https://discord.js.org/) - Node.js module used for interacting with the Discord API
-- [ytdl](https://github.com/fent/node-ytdl#readme) - YouTube downloader written in JavaScript
-- [yt-search](https://github.com/talmobi/yt-search#readme) - Simple YouTube search API and CLI
+- [discord-player](https://discord-player.js.org/) - Complete framework to simplify the implementation of music commands using discords.js
 - [FFmpeg](https://ffmpeg.org/) - Complete, cross-platform solution to record, convert and stream audio and video
-- [genius-lyrics](https://genius-lyrics.js.org/) - Simple lyrics fetcher that uses [Genius](https://genius.com/)
 
 ## Authors
 
