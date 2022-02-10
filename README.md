@@ -99,6 +99,10 @@ git clone https://github.com/Admi335/raven-bot.git
 
 ```bash
 npm install discord.js @discordjs/rest discord-api-types @discordjs/opus discord-player ffmpeg fluent-ffmpeg
+
+# or simply
+
+npm install
 ```
 
 ## Deployment
