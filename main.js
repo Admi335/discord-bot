@@ -51,11 +51,13 @@ setInterval(logs.write, 60 * 1000, logMessagesMap, dataDir); // Save logs every 
 
 
 // Addons
-const addonFiles = fs.readdirSync('./addons/').filter(file => file.endsWith('.js'));
+if (fs.existsSync('./addons/')) {
+    const addonFiles = fs.readdirSync('./addons/').filter(file => file.endsWith('.js'));
 
-for (const file of addonFiles) {
-    const addon = require(`./addons/${file}`);
-    addon(client);
+    for (const file of addonFiles) {
+        const addon = require(`./addons/${file}`);
+        addon(client);
+    }
 }
 
 
