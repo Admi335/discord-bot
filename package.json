@@ -1,6 +1,6 @@
 {
   "name": "raven-bot",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "This program is a discord bot, made using a module for Node.js, discord.js, that allows you to interact with the Discord API.",
   "main": "main.js",
   "scripts": {
