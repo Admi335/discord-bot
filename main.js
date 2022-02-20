@@ -63,7 +63,7 @@ if (fs.existsSync('./addons/')) {
 
 // Slash commands
 const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v9');
+const { Routes } = require('discord-api-types/v10');
 
 const commands = [];
 const commandFiles = fs.readdirSync('./src/commands/').filter(file => file.endsWith('.js'));
@@ -73,7 +73,7 @@ for (const file of commandFiles) {
     commands.push(command.data.toJSON());
 }
 
-const rest = new REST({ version: '9' }).setToken(token);
+const rest = new REST({ version: '10' }).setToken(token);
 
 (async () => {
     try {
@@ -94,21 +94,28 @@ const rest = new REST({ version: '9' }).setToken(token);
 // Discord player
 const { Player } = require('discord-player');
 const player = new Player(client);
+
 player.on("trackStart", (queue, track) => {
-    try {queue.metadata.channel.send(`🎶 | Now playing **${track.title}**!`);} catch (err) {
+    try {
+        queue.metadata.channel.send(`🎶 | Now playing **${track.title}**!`);
+    } catch (err) {
         console.log("trackStart err: ", err);
     }
+});
+player.on("error", err => {
+    console.log("Discord player error: ", err);
+});
+player.on("connectionError", err => {
+    console.log("Discord player connection error: ", err);
 });
 
 
 client.once('ready', () => {
     console.log('\nConnected!');
 });
-
 client.once('reconnecting', () => {
     console.log('\nReconnecting...');
 });
-
 client.once('disconnect', () => {
     console.log('\nDisconnected!');
 });
