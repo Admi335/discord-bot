@@ -133,23 +133,26 @@ client.on('interactionCreate', async interaction => {
                 channel: interaction.channel
             }
         });
-        
+
         try {
             if (!queue.connection) await queue.connect(interaction.member.voice.channel);
         } catch {
             queue.destroy();
             return await interaction.reply({ content: "Couldn't join the voice channel!", ephemeral: true });
         }
-        
-        await interaction.deferReply();
-        const track = await player.search(
-            query, { requestedBy: interaction.user }
-        ).then(x => x.tracks[0]);
 
-        if (!track)
-            return await interaction.followUp({ content: `❌ | Track: **${query}** not found!` });
-        
-        queue.play(track);
+        await interaction.deferReply();
+        const searchResults = await player.search(
+            query, { requestedBy: interaction.user }
+        );
+
+        if (!searchResults || !searchResults.tracks.length)
+            return await interaction.followUp({ content: `❌ | Track/Playlist: **${query}** not found!` });
+
+        searchResults.playlist ? queue.addTracks(searchResults.tracks) : queue.addTrack(searchResults.tracks[0]);
+        console.log(searchResults.playlist);
+
+        if (!queue.playing) await queue.play();
         return interaction.followUp({ content: `Queued **${query}**!` });
     }
     else if (interaction.commandName === "stop") {
@@ -201,11 +204,11 @@ client.on('interactionCreate', async interaction => {
 
         const vol = interaction.options.get("amount");
 
-        if (!vol) 
-            return interaction.followUp({ content: `🎧 | Current volume is **${queue.volume}**%!` }); 
+        if (!vol)
+            return interaction.followUp({ content: `🎧 | Current volume is **${queue.volume}**%!` });
         if ((vol.value) < 0 || (vol.value) > 100)
             return interaction.followUp({ content: "❌ | Volume range must be 0-100" });
-        
+
         const success = queue.setVolume(vol.value);
         return interaction.followUp({ content: success ? `✅ | Volume set to **${vol.value}%**!` : "❌ | Something went wrong!" });
     }
@@ -221,6 +224,13 @@ client.on('interactionCreate', async interaction => {
         const success = queue.setRepeatMode(loopMode);
         const mode = loopMode === QueueRepeatMode.TRACK ? "🔂" : loopMode === QueueRepeatMode.QUEUE ? "🔁" : "▶";
         return interaction.followUp({ content: success ? `${mode} | Updated loop mode!` : "❌ | Could not update loop mode!" });
+    }
+    else if (interaction.commandName === "shuffle") {
+        await interaction.deferReply();
+        const queue = player.getQueue(interaction.guildId);
+
+        const success = queue.shuffle();
+        return interaction.followUp({ content: success ? 'Queue shuffled!' : 'Could not shuffle the queue!' });
     }
     else if (interaction.commandName === "np") {
         await interaction.deferReply();
@@ -259,11 +269,10 @@ client.on('interactionCreate', async interaction => {
         return interaction.followUp({
             embeds: [{
                 title: "Server Queue",
-                description: `${tracks.join("\n")}${
-                    queue.tracks.length > tracks.length
-                        ? `\n...${queue.tracks.length - tracks.length === 1 ? `${queue.tracks.length - tracks.length} more track` : `${queue.tracks.length - tracks.length} more tracks`}`
-                        : ""
-                }`,
+                description: `${tracks.join("\n")}${queue.tracks.length > tracks.length
+                    ? `\n...${queue.tracks.length - tracks.length === 1 ? `${queue.tracks.length - tracks.length} more track` : `${queue.tracks.length - tracks.length} more tracks`}`
+                    : ""
+                    }`,
                 color: 0xff0000,
                 fields: [{ name: "Now Playing", value: `🎶 | **${currentTrack.title}** ([link](${currentTrack.url}))` }]
             }]
@@ -299,7 +308,7 @@ client.on('messageCreate', async message => {
     //const VCpermissions = voiceChannel.permissionsFor(message.client.user);
 
     const serverSettings = settingsMap.get(message.guild.id);
-   // const serverQueue = musicFuncs.getQueue().get(message.guild.id);
+    // const serverQueue = musicFuncs.getQueue().get(message.guild.id);
     const serverLang = translations[serverSettings.language];
     const prefix = serverSettings.prefix;
 
@@ -308,7 +317,7 @@ client.on('messageCreate', async message => {
         return deleteMsg(message, `Your message is too long! ${author}`, channel);
 
     // Log message
-    if (serverSettings.logMessages) 
+    if (serverSettings.logMessages)
         logs.add(message, logMessagesMap);
 
     // Blacklist
@@ -320,12 +329,12 @@ client.on('messageCreate', async message => {
         if (serverSettings.banForBannedPhrases)
             banUser(author, `You wrote some bad words! ${author}`, author);
     }
-    
+
     // Send prefix
     if (content.toLowerCase() == "prefix")
         return sendMsg(`My prefix is ${prefix}`, channel);
 
-/* COMMANDS */
+    /* COMMANDS */
     else if (content.startsWith(prefix)) {
         let command = content.slice(prefix.length);
         let targetUser = message.mentions.members.first();
@@ -342,19 +351,19 @@ client.on('messageCreate', async message => {
             const descriptions = helpTranslation.fields;
 
             const commands = [
-                { name: 'prefix',   admin: false, description: `${descriptions.prefix + '\n' + descriptions.usage}: \`prefix\``},
-                { name: 'help',     admin: false, description: `${descriptions.help + '\n' + descriptions.usage}: \`${prefix}help\`` },
-                { name: 'set',      admin: true,  description: `${descriptions.set + '\n' + descriptions.usage}: \`${prefix}set exampleSetting "true"\`` },
-                { name: 'settings', admin: true,  description: `${descriptions.settings + '\n' + descriptions.usage}: \`${prefix}settings\`` },
-                { name: 'send',     admin: true,  description: `${descriptions.send + '\n' + descriptions.usage}: \`${prefix}send "example"\` or \`${prefix}send "example" #example-channel\`` },
-                { name: 'ban',      admin: true,  description: `${descriptions.ban + '\n' + descriptions.usage}: \`${prefix}ban @example-user "Bad behavior" #bans\`` },
-                { name: 'log',      admin: true,  description: `Posts the log file for this server\nUsage: \`${prefix}log\`` },
-                { name: 'play',     admin: false, description: `${descriptions.play + '\n' + descriptions.usage}: \`${prefix}play "https://youtu.be/dQw4w9WgXcQ"\`` },
-                { name: 'skip',     admin: false, description: `${descriptions.skip + '\n' + descriptions.usage}\: \`${prefix}skip\`` },
-                { name: 'stop',     admin: false, description: `${descriptions.stop + '\n' + descriptions.usage}: \`${prefix}stop\`` },
-                { name: 'current',  admin: false, description: `${descriptions.current + '\n' + descriptions.usage}\: \`${prefix}current\`` },
-                { name: 'queue',    admin: false, description: `${descriptions.queue + '\n' + descriptions.usage}: \`${prefix}queue\`` },
-                { name: 'lyrics',   admin: false, description: `${descriptions.lyrics + '\n' + descriptions.usage}: \`${prefix}lyrics\`` }
+                { name: 'prefix', admin: false, description: `${descriptions.prefix + '\n' + descriptions.usage}: \`prefix\`` },
+                { name: 'help', admin: false, description: `${descriptions.help + '\n' + descriptions.usage}: \`${prefix}help\`` },
+                { name: 'set', admin: true, description: `${descriptions.set + '\n' + descriptions.usage}: \`${prefix}set exampleSetting "true"\`` },
+                { name: 'settings', admin: true, description: `${descriptions.settings + '\n' + descriptions.usage}: \`${prefix}settings\`` },
+                { name: 'send', admin: true, description: `${descriptions.send + '\n' + descriptions.usage}: \`${prefix}send "example"\` or \`${prefix}send "example" #example-channel\`` },
+                { name: 'ban', admin: true, description: `${descriptions.ban + '\n' + descriptions.usage}: \`${prefix}ban @example-user "Bad behavior" #bans\`` },
+                { name: 'log', admin: true, description: `Posts the log file for this server\nUsage: \`${prefix}log\`` },
+                { name: 'play', admin: false, description: `${descriptions.play + '\n' + descriptions.usage}: \`${prefix}play "https://youtu.be/dQw4w9WgXcQ"\`` },
+                { name: 'skip', admin: false, description: `${descriptions.skip + '\n' + descriptions.usage}\: \`${prefix}skip\`` },
+                { name: 'stop', admin: false, description: `${descriptions.stop + '\n' + descriptions.usage}: \`${prefix}stop\`` },
+                { name: 'current', admin: false, description: `${descriptions.current + '\n' + descriptions.usage}\: \`${prefix}current\`` },
+                { name: 'queue', admin: false, description: `${descriptions.queue + '\n' + descriptions.usage}: \`${prefix}queue\`` },
+                { name: 'lyrics', admin: false, description: `${descriptions.lyrics + '\n' + descriptions.usage}: \`${prefix}lyrics\`` }
             ]
 
             let commandsFields = [];
@@ -384,7 +393,7 @@ client.on('messageCreate', async message => {
                 .setTitle(embedTitle)
                 .setDescription(embedDescription)
                 .addFields(commandsFields);
-            
+
             try {
                 message.channel.send({ embeds: [helpEmbed] });
             } catch (err) {
@@ -398,10 +407,10 @@ client.on('messageCreate', async message => {
                 .setTitle('Settings')
                 .setDescription('List of all settings available')
                 .addFields(
-                    { name: 'prefix',              value: `Mostly a symbol that tells the bot to perform a command\nCurrent: ${serverSettings.prefix}\nDefault: "!"\nArguments: a character or a text` },
-                    { name: 'language',            value: `Language in which you want the bot to communicate with you\nCurrent: ${serverSettings.language}\nDefault: en\nArguments: "en", "cs", or "it"` },
-                    { name: 'logMessages',         value: `Wheter to log all messages posted to this server or not\nCurrent: ${serverSettings.logMessages}\nDefault: false\nArguments: "true" or "false"` },
-                    { name: 'maxMessageLength',    value: `Maximum amount of characters a message can have (if you don\'t want a limit, set this to -1)\nCurrent: ${serverSettings.maxMessageLength}\nDefault: -1\nArguments: number <-1;∞>` },
+                    { name: 'prefix', value: `Mostly a symbol that tells the bot to perform a command\nCurrent: ${serverSettings.prefix}\nDefault: "!"\nArguments: a character or a text` },
+                    { name: 'language', value: `Language in which you want the bot to communicate with you\nCurrent: ${serverSettings.language}\nDefault: en\nArguments: "en", "cs", or "it"` },
+                    { name: 'logMessages', value: `Wheter to log all messages posted to this server or not\nCurrent: ${serverSettings.logMessages}\nDefault: false\nArguments: "true" or "false"` },
+                    { name: 'maxMessageLength', value: `Maximum amount of characters a message can have (if you don\'t want a limit, set this to -1)\nCurrent: ${serverSettings.maxMessageLength}\nDefault: -1\nArguments: number <-1;∞>` },
                     { name: 'deleteBannedPhrases', value: `Whether to delete a message if it includes a blacklisted phrase\nCurrent: ${serverSettings.deleteBannedPhrases}\nDefault: true\nArguments: "true" or "false"` },
                     { name: 'banForBannedPhrases', value: `Whether to ban a user if his message includes a blacklisted phrase\nCurrent: ${serverSettings.banForBannedPhrases}\nDefault: false\nArguments: "true" or "false"` }
                 );
@@ -410,10 +419,10 @@ client.on('messageCreate', async message => {
         }
 
         else if (command.startsWith("ban")) {
-            if (!targetUser)         return sendMsg("You need to specify whom to ban!", channel);
-            else if (!targetString)  return banUser(targetUser);
+            if (!targetUser) return sendMsg("You need to specify whom to ban!", channel);
+            else if (!targetString) return banUser(targetUser);
             else if (!targetChannel) return banUser(targetUser, targetString, channel);
-            else                     return banUser(targetUser, targetString, targetChannel);
+            else return banUser(targetUser, targetString, targetChannel);
         }
 
         else if (command.startsWith("send")) {
@@ -421,7 +430,7 @@ client.on('messageCreate', async message => {
                 return sendMsg(`[ERROR] You must write your message inside of two " or ', and your message cannot be empty. ${author}`, channel);
 
             if (targetChannel) await sendMsg(targetString, targetChannel);
-            else               await sendMsg(targetString, channel);
+            else await sendMsg(targetString, channel);
 
             return deleteMsg(message);
         }
@@ -430,14 +439,14 @@ client.on('messageCreate', async message => {
             logPath = await logs.get(message.guild.id, targetString, dataDir);
 
             if (logPath == "") return sendMsg("Log file for this date does not exist!", channel);
-            else               return message.channel.send("Log file for this server:", { files: [logPath] });
+            else return message.channel.send("Log file for this server:", { files: [logPath] });
         }
-        
-    /* SETTINGS */
+
+        /* SETTINGS */
         else if (command.startsWith("set")) {
             const setting = command.split(" ")[1];
             settings.set(setting, targetString, serverSettings, channel);
-            
+
             return settingsMap.set(message.guild.id, serverSettings);
         }
     }
