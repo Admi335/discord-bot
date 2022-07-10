@@ -1,22 +1,29 @@
 module.exports = str => {
 
-    function findSubstring(quote = "\"") {
-        let subStrI = str.indexOf(quote);
-        let subStrEnd;
+    function findSubstring() {
+        let quote = "\"";
+        
+        for (let i = 0; i < 2; i++) {
+            let subStrI;
 
-        if (subStrI != -1 && subStrEnd != -1) {
-            for (let i = subStrI; i < str.length; i++)
-            {
-                if (str[i] == quote && str[i - 1] != "\\")
-                    subStrEnd = i;
+            do {
+                subStrI = str.indexOf(quote);
+            } while (subStrI != -1 && str[subStrI - 1] == "\\");
+
+            if (subStrI != -1) {
+                let subStrEnd = subStrI;
+                
+                do {
+                    subStrEnd = str.indexOf(quote, subStrEnd + 1);
+                } while (subStrEnd != -1 && str[subStrEnd - 1] == "\\");
+                
+                if (subStrEnd != -1) {
+                    return str.substring(subStrI + 1, subStrEnd);
+                }
             }
 
-            return str.substring(subStrI + 1, subStrEnd);
-        }
-
-        if (subStrI == -1 || subStrEnd == -1) {
-            if (quote == "\"") return findSubstring("'");
-            else               return undefined;
+            if (i == 0) quote = "'";
+            else        return undefined;
         }
     }
 
