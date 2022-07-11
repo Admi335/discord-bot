@@ -18,6 +18,7 @@
  */
 
 const fs = require('fs');
+const path = require('path);
 
 const blacklist = require('./src/blacklistPhrases.js');
 const settings = require('./src/settings.js');
@@ -27,7 +28,25 @@ const { sendMsg, deleteMsg, banUser } = require('./src/discordFuncs.js');
 
 const findSubstring = require('./src/findSubstring.js');
 
-const translations = require('./src/translations.json');
+
+const translations = new Map();
+
+fs.access('./src/translations/', fs.F_OK, err => {
+    if (err) return console.log(`\nCouldn't read from directory containing translation files!\n`);
+    
+    const files = fs.readdirSync('./src/translations/').map(fileName => {
+        return path.join('./src/translations/' + fileName);
+    }).filter(file => path.extname(file).toLowerCase() === '.json');
+    
+    files.forEach(file => {
+        fs.readFile(file, 'utf-8', (err, data) => {
+            if (err) return console.error(`Failed to read a translation file ${file}\nError: ` + err);
+            
+            data = JSON.parse(data);
+            translations.set(path.parse(file).name, data);
+        });
+    });
+});
 
 /*-----------------------------------------------------*/
 /*-------------------- DISCORD BOT --------------------*/
