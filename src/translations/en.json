@@ -1,0 +1,25 @@
+{
+    "embeds": {
+        "help": {
+            "title": "Help",
+            "description": "List of all useful commands and their usage",
+            "adminTitle": "Help - Admin",
+            "adminDescription": "List of all useful **admin** commands and their usage",
+            "fields": {
+                "usage": "Usage",
+                "prefix": "Shows my command prefix",
+                "help": "Shows this list",
+                "set": "Sets a setting",
+                "settings": "Shows the list of available settings",
+                "send": "Sends a message to a channel (if not specified, it sends the message to the current channel)",
+                "ban": "Bans a user (optional: reason, channel whither the reason will be posted)",
+                "play": "Plays a song from YouTube",
+                "skip": "Skips the current song",
+                "stop": "Stops the bot from playing music",
+                "current": "Shows some info about the current song",
+                "queue": "Show the list of queued songs",
+                "lyrics": "Shows the lyrics for the current song"
+            }
+        }
+    }
+}
