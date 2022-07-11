@@ -1,0 +1,25 @@
+{
+    "embeds": {
+        "help": {
+            "title": "Help",
+            "description": "Seznam všech užitečných příkazů a jejich užití",
+            "adminTitle": "Help - Admin",
+            "adminDescription": "Seznam všech užitečných **admin** příkazů a jejich užití",
+            "fields": {
+                "usage": "Použití",
+                "prefix": "Ukáže můj prefix",
+                "help": "Ukáže tento seznam",
+                "set": "Nastaví nastavení",
+                "settings": "Ukáže seznam dostupných nastavení",
+                "send": "Pošle zprávu do kanálu (pokud žádný není specifikován, pošle zprávu do momentálního channelu)",
+                "ban": "Zabanuje uživatele (volitelné: důvod; kanál, kam se pošle důvod)",
+                "play": "Zahraje píseň z YouTubu",
+                "skip": "Přeskočí momentální píseň",
+                "stop": "Přestane hrát hudbu",
+                "current": "Ukáže nějaké info o momentální písni",
+                "queue": "Ukáže seznam písní ve frontě",
+                "lyrics": "Ukáže text momentální písně"
+            }
+        }
+    }
+}
