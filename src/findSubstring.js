@@ -4,10 +4,10 @@ module.exports = str => {
         let quote = "\"";
         
         for (let i = 0; i < 2; i++) {
-            let subStrI;
+            let subStrI = -1;
 
             do {
-                subStrI = str.indexOf(quote);
+                subStrI = str.indexOf(quote, subStrI + 1);
             } while (subStrI != -1 && str[subStrI - 1] == "\\");
 
             if (subStrI != -1) {
