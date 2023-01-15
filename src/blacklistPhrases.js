@@ -34,24 +34,8 @@ function get(filePath) {
 }
 
 function checkOccurences(text, blacklistArr) {
-    blacklistArr.forEach(phrase => {
-        console.log(phrase);
-        if (text.toLowerCase().includes(phrase)) {
-            console.log("includes");
-            /*if ((text[text.indexOf(phrase) - 1] == ' ' ||
-                !text[text.indexOf(phrase) - 1])
-                &&
-                (text[text.indexOf(phrase) + phrase.length] == ' ' ||
-                !text[text.indexOf(phrase) + phrase.length])) {
-                    return true;
-            }*/
-            if (!(text[text.indexOf(phrase) - 1])) {
-                    return true;
-                }
-        }
-    });
-
-    return false;
+    let regex = new RegExp(`\\b(${blacklistArr.join('|')})\\b`, 'i');
+    return regex.test(text);
 }
 
 module.exports = {
