@@ -1,34 +1,26 @@
 const fs = require('fs');
-const readline = require('readline');
 
 function get(filePath) {
     let blacklist = [];
 
-    fs.access(filePath, fs.F_OK, err => {
-        if (err) {
-            return console.log("\nBlacklist of phrases doesn't exist, or I do not have access to it\n");
-        }
-    
-        let rl = readline.createInterface({
-            input: fs.createReadStream(filePath),
-            crlfDelay: Infinity
-        });
-    
+    try {
+        await fs.promises.access(filePath);
+        
+        let data = await fs.promises.readFile(filePath);
+        let lines = data.toString().split("\n");
+        
         console.log("\nBlacklisted phrases:");
-    
-        rl.input.on('error', err => {
-            console.log("Failed to read file!\n" + err);
-        });
-    
-        rl.on('line', line => {
-            line.trim();
-    
-            if (!line.startsWith("!--")) {
-                console.log(line);
-                blacklist.push(line.toLowerCase());
+        for (let i = 0; i < lines.length; i++) {
+            lines[i] = lines[i].trim();
+            
+            if (!lines[i].startsWith("!--")) {
+                console.log(lines[i]);
+                blacklist.push(lines[i]);
             }
-        });
-    });
+        }
+    } catch (err) {
+        console.log("\nBlacklist of phrases doesn't exist, or I do not have access to it\n");
+    }
 
     return blacklist;
 }
